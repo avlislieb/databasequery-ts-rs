@@ -1,4 +1,4 @@
-import { getRepository, Repository } from 'typeorm';
+import { getRepository, ILike, Like, Repository } from 'typeorm';
 
 import { IFindUserWithGamesDTO, IFindUserByFullNameDTO } from '../../dtos';
 import { User } from '../../entities/User';
@@ -13,18 +13,34 @@ export class UsersRepository implements IUsersRepository {
 
   async findUserWithGamesById({
     user_id,
-  }: IFindUserWithGamesDTO): Promise<User> {
-    // Complete usando ORM
+  }: IFindUserWithGamesDTO): Promise<User | undefined> {
+    const user = await this.repository
+      .createQueryBuilder("users")
+      .innerJoinAndSelect("users.games", "games")
+      .where("users.id = :id", { id: user_id })
+      .getOne();
+      
+    return user;
   }
 
   async findAllUsersOrderedByFirstName(): Promise<User[]> {
-    return this.repository.query(); // Complete usando raw query
+    return this.repository.find({
+      order: {
+        first_name: "ASC"
+      }
+    }); // Complete usando raw query
   }
 
   async findUserByFullName({
     first_name,
     last_name,
   }: IFindUserByFullNameDTO): Promise<User[] | undefined> {
-    return this.repository.query(); // Complete usando raw query
+    const user = await this.repository.find({
+      where: {
+        first_name: ILike(`%${first_name}%`),
+        last_name: ILike(`%${last_name}%`),
+      },
+    }); // Complete usando raw query
+    return user;
   }
 }
